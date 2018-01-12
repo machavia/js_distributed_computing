@@ -3,8 +3,12 @@ var path = require('path');
 var logger = require('morgan');
 var bodyParser = require('body-parser');
 
+const { Database } = require('./models/Database');
+let db = new Database();
+global.db =  (global.db ? global.db : db );
+
 var index = require('./routes/index');
-var users = require('./routes/users');
+var jobs = require('./routes/jobs');
 
 var app = express();
 
@@ -18,7 +22,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', index);
-app.use('/users', users);
+app.use('/jobs', jobs);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

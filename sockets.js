@@ -1,4 +1,4 @@
-var { Worker } = require('./models/Worker');
+const { Worker } = require('./models/Worker');
 var sockets = {};
 
 sockets.init = function (server) {
@@ -14,19 +14,23 @@ sockets.init = function (server) {
 	});
 
 	io.on('connection', (socket) => {
-
 		let token = socket.handshake.query.token;
 		let worker = new Worker( socket );
 		worker.connect( token );
 		worker.sendMessage( 'Welcome to the chat')
 
 
-		socket.on('chat message', function(msg){
-			console.log( 'id ' + socket.id );
-			worker.sendMessage( '-> message send')
+		socket.on('get_task', function(msg){
+			console.log( 'Claiming new task' );
+			worker.sendTask();
+		});
+
+		socket.on('save_result', function(msg){
+			console.log( 'Receiveing result ' + msg );
 		});
 
 		socket.on('disconnect', function(){
+			worker.disconnect();
 			console.log('user disconnected');
 		});
 	});
