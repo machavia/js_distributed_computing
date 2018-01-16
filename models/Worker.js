@@ -1,9 +1,9 @@
-const { Task } = require('./Task');
 
 exports.Worker = class {
 
-	constructor( socket ) {
+	constructor( socket, taskManager ) {
 		this.socket = socket;
+		this.task = taskManager;
 	}
 
 	connect( id ) {
@@ -24,17 +24,15 @@ exports.Worker = class {
 		db.delete( 'worker', 'id =' + this.woker_id );
 	}
 
-	sendTask() {
-		Task.getATask((result) => {
-			console.log( 'sending task' );
-			if( result['rowid'] === undefined ) return false;
-			let ob = { id: result['rowid'], job_id: result['job_id'], batch: result['batch'] };
-			//this.socket.emit('new_task', ob);
-		});
-	}
+	sendTask( task ) {
+		if( task === null) {
+			this.socket.emit('wait', 5000 );
+			return false;
+		}
+		console.log( 'rowid send ' + task['rowid'] );
 
-	sendMessage( message ) {
-		this.socket.emit('chat message', message);
+		let ob = { id: task['rowid'], job_id: task['job_id'], batch: task['batch'] };
+		this.socket.emit('new_task', ob);
 	}
 
 

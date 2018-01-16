@@ -3,10 +3,11 @@ const sqlite3 = require('sqlite3').verbose();
 exports.Database = class {
 
 	constructor() {
+		console.log( 'init Db Object' );
 		//this.db = new sqlite3.Database(':memory:',  (err) => { if( err ) console.error(err.message) } );
 		this.db = new sqlite3.Database(__dirname + '/../db/sqlite.db',  (err) => { if( err ) console.error(err.message) } );
 
-		this.db.run( "CREATE TABLE IF NOT EXISTS task ( job_id integer NOT NULL, status text NOT NULL, creation_time integer NOT NULL, batch text NOT NULL );" );
+		this.db.run( "CREATE TABLE IF NOT EXISTS task ( job_id integer NOT NULL, status text NOT NULL, creation_time integer NOT NULL, batch text NOT NULL, result integer );" );
 		this.db.run( "CREATE TABLE IF NOT EXISTS worker ( id integer PRIMARY KEY, connection_time integer NOT NULL, last_claim integer NOT NULL );" );
 	}
 
@@ -24,7 +25,6 @@ exports.Database = class {
 		let query = 'UPDATE ' + table + ' SET ' +fields + ' WHERE ' + where;
 
 		let values = Object.values(data)
-		console.log( query );
 		this.db.run(query, values, (err) => { if( err ) console.error(err.message) } );
 	}
 

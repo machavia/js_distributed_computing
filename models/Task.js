@@ -1,23 +1,38 @@
 
 exports.Task = class {
 
-	constructor( name ) {
+	constructor() {
+		console.log( 'init Task' );
+		this.index = 0;
+		this.taskId = false;
+		this.taskSend = 0;
 
-	}
-
-	static getATask( callback ) {
-		db.select( 'SELECT rowid,* FROM task WHERE status = "running" OR status = "waiting" ORDER BY status ASC, creation_time DESC LIMIT 1', ( result ) => {
-			if( result.length > 1 ) {
-				console.error( 'Get A Task suppose to return one task only')
-				return false;
-			}
-			if( result.length > 0 ) {
-				result = result[0];
-				if( result.status == 'waiting' ) db.update( 'task', {status: 'running'}, 'rowid =' + result.rowid );
-			}
-
-			callback( result );
+		db.select( 'SELECT rowid,* FROM task', ( result ) => {
+			this.tasks = result;
 		});
 	}
+
+	getATask() {
+		if( this.taskSend >= 5 ) {
+			console.log( 'Task already sent 5 times' );
+			return null;
+		}
+		this.taskSend++;
+		let task = this.tasks[this.index];
+		this.taskId = task['rowid'];
+		return task;
+	}
+
+	saveResult( taskid, result ) {
+		if( taskid != this.taskId ) {
+			console.log( 'Current task id not matching send task id with result' );
+			return false;
+		}
+		db.update( 'task', {status: 'done', result: result}, 'rowid =' + taskid );
+		this.index++;
+		this.taskSend = 0;
+	}
+
+
 
 }
