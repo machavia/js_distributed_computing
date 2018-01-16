@@ -9,7 +9,7 @@ exports.Worker = class {
 	connect( id ) {
 		this.woker_id = id
 		console.log( 'Worker connected: ' + id );
-
+		/*
 		db.insert(
 			'worker',
 			{
@@ -18,20 +18,33 @@ exports.Worker = class {
 				last_claim:  Date.now(),
 			}
 			);
+			*/
 	}
 
 	disconnect() {
-		db.delete( 'worker', 'id =' + this.woker_id );
+		//db.delete( 'worker', 'id =' + this.woker_id );
 	}
 
 	sendTask( task ) {
-		if( task === null) {
-			this.socket.emit('wait', 5000 );
+		if(task['worker_id'] === undefined ) {
+			console.error( 'Can not send a task without worker id');
+			return false
+		}
+
+		if( task.status == 'end') {
+			console.log( 'Sending end command to worker ' + task['worker_id'] );
+			this.socket.emit('end', {worker_id: task['worker_id']});
 			return false;
 		}
-		console.log( 'rowid send ' + task['rowid'] );
 
-		let ob = { id: task['rowid'], job_id: task['job_id'], batch: task['batch'] };
+		if( task.status == 'wait') {
+			console.log( 'Sending wait command to worker ' + task['worker_id'] );
+			this.socket.emit('wait', {worker_id: task['worker_id'], time: 5000 });
+			return false;
+		}
+
+		console.log( 'rowid send ' + task['rowid'] + ' to worker id ' + task['worker_id'] );
+		let ob = { id: task['rowid'], worker_id: task['worker_id'], job_id: task['job_id'], batch: task['batch'] };
 		this.socket.emit('new_task', ob);
 	}
 

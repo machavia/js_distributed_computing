@@ -7,19 +7,23 @@ exports.Task = class {
 		this.taskId = false;
 		this.taskSend = 0;
 
-		db.select( 'SELECT rowid,* FROM task', ( result ) => {
+		db.select( 'SELECT rowid,* FROM task WHERE status = "waiting"', ( result ) => {
 			this.tasks = result;
 		});
 	}
 
-	getATask() {
-		if( this.taskSend >= 5 ) {
-			console.log( 'Task already sent 5 times' );
-			return null;
+	getATask( workerId ) {
+
+		if( this.index == this.tasks.length ) return { worker_id: workerId, status: 'end'};
+
+		if( this.taskSend >= 1 ) {
+			return {worker_id: workerId, status: 'wait'};
 		}
+
 		this.taskSend++;
 		let task = this.tasks[this.index];
 		this.taskId = task['rowid'];
+		task['worker_id'] = workerId;
 		return task;
 	}
 

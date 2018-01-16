@@ -6,7 +6,6 @@ sockets.init = function (server) {
 
 	var io = require('socket.io').listen(server);
 	var taskManager = new Task();
-	console.log( taskManager.index );
 
 	io.use((socket, next) => {
 		let token = socket.handshake.query.token;
@@ -22,8 +21,7 @@ sockets.init = function (server) {
 		worker.connect( token );
 
 		socket.on('get_task', function(msg){
-			console.log( 'Claiming new task' );
-			let task = taskManager.getATask();
+			let task = taskManager.getATask( msg['worker_id'] );
 			worker.sendTask( task );
 		});
 
