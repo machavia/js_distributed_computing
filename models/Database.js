@@ -25,7 +25,7 @@ exports.DatabasePromise = class {
         )
     }
 
-	select( query, obj=this) {
+	select(query, obj=this) {
 
 		return new Promise(
             function(resolve, reject){
@@ -34,9 +34,7 @@ exports.DatabasePromise = class {
                     [],
                     (err, rows ) => {
                         if(err) reject("Read error: " + err.message)
-                        else {
-                            resolve(rows)
-                        }
+                        else {resolve(rows)}
                     }
                 )
             }

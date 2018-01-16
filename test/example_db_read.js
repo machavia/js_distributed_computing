@@ -1,16 +1,23 @@
-const DataSource = require(__dirname + '/../models/DataSource')
+DataSource = require(__dirname + '/../models/DataSource')
 
-dataSource = new DataSource.DataSource()
+DataSource = require('./../models/DataSource')
 
+ds = new DataSource.DataSource()
+row = ds.next()
+
+row
+    .then((x) => console.log(x))
+    .then(() => console.log('OOK'))
 
 // in here we re-create feeder except we take a 1:1 ratio of positives
 // negatives (we assume a 0-1 target)
 {
+    
     /*
     let targetsAvailable = {};
-    let targetsAvailablePromise;
-    let target2Ids;
-    
+    let ds.target2Ids = new Map();
+    */
+
     function pipeline_shift(pipeline){
         func = pipeline.shift()
         if(func != undefined){
@@ -19,8 +26,7 @@ dataSource = new DataSource.DataSource()
     }
 
     function pipeTargetsAvailable(pipeline){
-        dataSource
-            .dataBase
+        ds.dataBase
             .select(
                 'SELECT DISTINCT target FROM ids',
                 (x) => {
@@ -33,13 +39,12 @@ dataSource = new DataSource.DataSource()
     }
 
     function pipeTarget2Ids(pipeline){
-        dataSource
-            .dataBase
+        ds.dataBase
             .select(
                 'SELECT DISTINCT target, ex_id FROM ids',
                 (x) => {
-                    target2Ids = x;
-                    console.log(target2Ids);
+                    ds.target2Ids = x;
+                    console.log(ds.target2Ids);
                     pipeline_shift(pipeline)
                 }
             );
@@ -47,18 +52,9 @@ dataSource = new DataSource.DataSource()
     }
 
     /*
-
     pipeTargetsAvailable([
         pipeTarget2Ids
     ]);
     */
 
-    console.log(dataSource.dataBasePromise)
-
-    let targets = dataSource
-        .dataBasePromise
-        .select('SELECT DISTINCT target FROM ids')
-        .then((x) => {console.log(x)});
-
-    // targets.then((x) => {system.log(x)})
 }
