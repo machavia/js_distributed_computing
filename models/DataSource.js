@@ -4,21 +4,24 @@ const cout = console.log
 
 exports.DataSource = class {
 
-	constructor(path, batch_size=64) {
+    /*
+     * Disclaimer: Assumes that all ids contained in db fir in memory
+     */
+
+	constructor(path, batchSize=64) {
         this.buff = undefined;
 
         this.targetsAvailable = {};
         this.target2Ids = new Map(); 
         this.target2IdTaken = new Map();
         this.epoch = 0;
-        this.batch_size = batch_size;
+        this.batchSize = batchSize;
 		this.dataBase = new Database.Database('example.db');
 		this.dbp = new Database.DatabasePromise('example.db');
 
         this.prepare_list = this.dbp
             .select('SELECT DISTINCT target FROM ids')
             .then((x) => {this.targetsAvailable = x;})
-            .then(() => {console.log("->", this.targetsAvailable)})
             .then(() => {
                 return(this.dbp.select('SELECT target, ex_id FROM ids'))
             })
@@ -28,14 +31,44 @@ exports.DataSource = class {
                         let target = row.target;
                         let ex_id = row.ex_id;
                         if(! this.target2Ids.has(target)){
+                            this.target2IdTaken.set(target, 0);
                             this.target2Ids.set(target, new Array());
                         }
                         this.target2Ids.get(target).push(ex_id);
                     }
                 }
             )
-            .then(() => {console.log("->", ds.target2Ids)})
+            .then(() => {this.shuffleIds();});
+
 	}
+
+    resetCounters() {
+        // reset where we are at in each target's array of indices
+        for(let target of this.target2IdTaken.keys()){
+            this.target2IdTaken.set(target, 0);
+        }
+    }
+
+    shuffleIds(){
+        for(let target of this.target2Ids.keys()){
+            let array = this.target2Ids.get(target);
+            let counter = array.length;
+
+            // While there are elements in the array
+            while (counter > 0) {
+                // Pick a random index
+                let index = Math.floor(Math.random() * counter);
+
+                // Decrease counter by 1
+                counter--;
+
+                // And swap the last element with it
+                let temp = array[counter];
+                array[counter] = array[index];
+                array[index] = temp;
+            }
+        }
+    }
 
     getArrays(dbReturn){
         let X = new Array();
@@ -48,7 +81,7 @@ exports.DataSource = class {
             let curr_y = row.target;
             if(curr_id != last_id){
                 // add a sequence
-                X.push([]);
+                X.push(new Array());
                 y.push(curr_y);
                 ids.push(curr_id);
                 last_id = curr_id;
@@ -70,22 +103,58 @@ exports.DataSource = class {
     }
 
     async next(){
+        /* Get next minibatch and epoch
+        * returns: a tupe (X, y, ids) or null if end of epoch
+        *   (next call will return (X, y, ids)).
+        * To avoid unexpected behaviors you should ensure that previous call
+        * ended before doing another one.
+        * For now, just your basic equilibrated batch, roughly same qtty for
+        * each label */
         let X, y, ids;
 
         await this.prepare_list;  // need to have infos completed
 
+        let remainingInBatch = this.batchSize;
+        let targetsTodo = this.target2Ids.size;
+
+        // now loop over eack key take a certain number (what remains / todo)
+        let epochEnd = false;
         let query = '(';
-        for(let [i, j] of this.target2Ids.get(0).entries()){
-            query += '"' + j + '"' 
-            if(i == 63){break;}
-            query += ","
+        for(let target of this.target2Ids.keys()){
+            let currTargetIds = this.target2Ids.get(target);
+            // cout("==>", remainingInBatch, targetsTodo)
+            let toTake = Math.round(remainingInBatch / targetsTodo);
+            // check if we still have what it takes to provide a batch
+            let alreadyTaken = this.target2IdTaken.get(target);
+            let availableForTarget = currTargetIds.length - alreadyTaken;
+            if(availableForTarget < this.batchSize){
+                epochEnd = true;
+                this.epoch += 1;
+                this.resetCounters();
+                this.shuffleIds();
+                break;
+            }
+            this.target2IdTaken
+                .set(target, this.target2IdTaken.get(target) + toTake);
+            remainingInBatch -= toTake;
+            targetsTodo -= 1;
+            let currIds = currTargetIds
+                .slice(alreadyTaken, alreadyTaken + toTake);
+            for(let [i, j] of currIds.entries()){
+                query += '"' + j + '"' ;
+                query += ",";
+            }
         }
-        query += ")"
-        cout(query)
+
+        if(epochEnd){return(null);}
+
+        query = query.slice(0, -1);
+        query += ')';
+        // cout(query);
 
         let retArrays = await this.dbp
             .select('SELECT * FROM dataset WHERE ex_id IN ' + query)
-            .then((x) => {[X, y, ids] = this.getArrays(x)})
+            .then((x) => {[X, y, ids] = this.getArrays(x)});
 
         await retArrays;
 

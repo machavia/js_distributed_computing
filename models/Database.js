@@ -26,7 +26,6 @@ exports.DatabasePromise = class {
     }
 
 	select(query, obj=this) {
-
 		return new Promise(
             function(resolve, reject){
                 obj.db.all(
@@ -76,24 +75,6 @@ exports.Database = class {
             (err, rows ) => {
                 if( err ) console.error(err.message)
                 else callback( rows )
-            }
-        );
-	}
-
-	select_promise( query ) {
-
-		return new Promise(
-            function(resolve, reject){
-                this.db.all(
-                    query,
-                    [],
-                    (err, rows ) => {
-                        if(err) reject("Read error: " + err.message)
-                        else {
-                            resolve(rows)
-                        }
-                    }
-                )
             }
         );
 	}
