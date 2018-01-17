@@ -5,7 +5,7 @@ const cout = console.log
 exports.DataSource = class {
 
     /*
-     * Disclaimer: Assumes that all ids contained in db fir in memory
+     * Disclaimer: Assumes that all ids contained in db do fit in memory
      */
 
 	constructor(path, batchSize=64) {
@@ -50,6 +50,8 @@ exports.DataSource = class {
     }
 
     shuffleIds(){
+        // shuffle arrays of indices for each target so that we do not take
+        // examples in the same order accross epochs
         for(let target of this.target2Ids.keys()){
             let array = this.target2Ids.get(target);
             let counter = array.length;
@@ -71,6 +73,12 @@ exports.DataSource = class {
     }
 
     getArrays(dbReturn){
+        /* from the return of a database (i.e. array of row objects)
+         * extract three items:
+         *  - an array of arrays X (three layers: batch, sequence, steps)
+         *  - an array of scalars y
+         *  - an array of strings ids
+         */
         let X = new Array();
         let y = new Array();
         let ids = new Array();
@@ -106,10 +114,14 @@ exports.DataSource = class {
         /* Get next minibatch and epoch
         * returns: a tupe (X, y, ids) or null if end of epoch
         *   (next call will return (X, y, ids)).
+        *
+        * Disclaimers:
         * To avoid unexpected behaviors you should ensure that previous call
         * ended before doing another one.
         * For now, just your basic equilibrated batch, roughly same qtty for
-        * each label */
+        * each label.
+        * Won't work if you have more labels than items in your batch.
+        * */
         let X, y, ids;
 
         await this.prepare_list;  // need to have infos completed
@@ -122,7 +134,6 @@ exports.DataSource = class {
         let query = '(';
         for(let target of this.target2Ids.keys()){
             let currTargetIds = this.target2Ids.get(target);
-            // cout("==>", remainingInBatch, targetsTodo)
             let toTake = Math.round(remainingInBatch / targetsTodo);
             // check if we still have what it takes to provide a batch
             let alreadyTaken = this.target2IdTaken.get(target);
@@ -141,8 +152,7 @@ exports.DataSource = class {
             let currIds = currTargetIds
                 .slice(alreadyTaken, alreadyTaken + toTake);
             for(let [i, j] of currIds.entries()){
-                query += '"' + j + '"' ;
-                query += ",";
+                query += '"' + j + '",' ;
             }
         }
 
