@@ -1,6 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 
-exports.DatabasePromise = class {
+exports.Database = class {
 
 	constructor(db_file='sq_lite.db') {
 		this.db_path = __dirname + '/../db/' + db_file
@@ -40,55 +40,11 @@ exports.DatabasePromise = class {
         );
 	}
 
-}
-
-exports.Database = class {
-
-	constructor(db_file='sq_lite.db', defaultCreate=true) {
-		//this.db = new sqlite3.Database(':memory:',  (err) => { if( err ) console.error(err.message) } );
-		this.db = new sqlite3.Database(
-            __dirname + '/../db/' + db_file,
-            (err) => { if( err ) console.error(err.message) }
-        );
-
-
-        if(defaultCreate){
-            this.db.run(
-                "CREATE TABLE IF NOT EXISTS task ( " +
-                "   job_id integer NOT NULL, status text NOT NULL, " +
-                "   creation_time integer NOT NULL, batch text NOT NULL );"
-            );
-            this.db.run(
-                "CREATE TABLE IF NOT EXISTS worker ( " +
-                "   id integer PRIMARY KEY, " +
-                "   connection_time integer NOT NULL," +
-                "   last_claim integer NOT NULL );"
-            );
-        }
-	}
-
-	select( query, callback ) {
-
-		return this.db.all(
-            query,
-            [],
-            (err, rows ) => {
-                if( err ) console.error(err.message)
-                else callback( rows )
-            }
-        );
-	}
-
-	update( table, data, where ) {
-		let fields = Object.keys( data )
-		fields = fields.map((field) => field + ' = (?)' ).join(',');
-		let query = 'UPDATE ' + table + ' SET ' +fields + ' WHERE ' + where;
-
-		let values = Object.values(data)
-		console.log( query );
-		this.db.run(query, values, (err) => { if( err ) console.error(err.message) } );
-	}
-
+	/**
+	 * #TODO: refactor it with Promises
+	 * @param table
+	 * @param data
+	 */
 	insert( table, data ) {
 		let values = false;
 		let fields = data
@@ -122,12 +78,4 @@ exports.Database = class {
 
 	}
 
-	delete( table, where ) {
-		let query = 'DELETE FROM ' + table + ' WHERE ' + where;
-		this.db.run(query, [], (err) => { if( err )console.error(err.message) } );
-	}
-
-	close() {
-		this.db.close();
-	}
 }

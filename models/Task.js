@@ -1,30 +1,39 @@
+const { DataSource } = require('./DataSource');
 
 exports.Task = class {
 
 	constructor() {
 		console.log( 'init Task' );
-		this.index = 0;
+		this.dataSource = new DataSource( 'example.db' );
 		this.taskId = false;
 		this.taskSend = 0;
+		this.state = null;
 
-		db.select( 'SELECT rowid,* FROM task WHERE status = "waiting"', ( result ) => {
-			this.tasks = result;
-		});
 	}
 
-	getATask( workerId ) {
+	async getATask( workerId ) {
 
-		if( this.index == this.tasks.length ) return { worker_id: workerId, status: 'end'};
+		if( this.dataSource.epoch == 10 ) return { worker_id: workerId, status: 'end'};
+
+		let nextBatch = [];
+		await this.dataSource.next().then( (result) => nextBatch = result );
 
 		if( this.taskSend >= 1 ) {
 			return {worker_id: workerId, status: 'wait'};
 		}
 
 		this.taskSend++;
-		let task = this.tasks[this.index];
-		this.taskId = task['rowid'];
-		task['worker_id'] = workerId;
+		this.taskId = this.generateId()
+		let task = {
+			taskId: this.taskId,
+			worker_id: workerId,
+			status: "ready",
+			state: this.state,
+			batch: JSON.stringify( nextBatch )
+		};
+
 		return task;
+
 	}
 
 	saveResult( taskid, result ) {
@@ -32,9 +41,20 @@ exports.Task = class {
 			console.log( 'Current task id not matching send task id with result' );
 			return false;
 		}
-		db.update( 'task', {status: 'done', result: result}, 'rowid =' + taskid );
-		this.index++;
+
 		this.taskSend = 0;
+		this.state = result;
+	}
+
+
+	generateId() {
+		let text = "";
+		let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+		for( let i = 0; i < 5; i++) text += possible.charAt(Math.floor(Math.random() * possible.length));
+		text = Date.now() + text;
+
+		return text;
 	}
 
 

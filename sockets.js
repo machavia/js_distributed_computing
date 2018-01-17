@@ -20,9 +20,12 @@ sockets.init = function (server) {
 		let worker = new Worker( socket, taskManager );
 		worker.connect( token );
 
-		socket.on('get_task', function(msg){
-			let task = taskManager.getATask( msg['worker_id'] );
-			worker.sendTask( task );
+		socket.on('get_task', async function(msg){
+			let myTask = {};
+			await taskManager.getATask( msg['worker_id'] )
+				.then( (result) => myTask = result);
+
+			worker.sendTask( myTask );
 		});
 
 		socket.on('save_result', function(msg){

@@ -8,7 +8,7 @@ exports.DataSource = class {
      * Disclaimer: Assumes that all ids contained in db do fit in memory
      */
 
-	constructor(path, batchSize=64) {
+	constructor(fileName, batchSize=64) {
         this.buff = undefined;
 
         this.targetsAvailable = {};
@@ -16,8 +16,7 @@ exports.DataSource = class {
         this.target2IdTaken = new Map();
         this.epoch = 0;
         this.batchSize = batchSize;
-		this.dataBase = new Database.Database('example.db');
-		this.dbp = new Database.DatabasePromise('example.db');
+		this.dbp = new Database.Database( fileName);
 
         this.prepare_list = this.dbp
             .select('SELECT DISTINCT target FROM ids')
@@ -38,7 +37,7 @@ exports.DataSource = class {
                     }
                 }
             )
-            .then(() => {this.shuffleIds();});
+            .then(() => {this.shuffleIds();}).catch( (error) => { console.log( error );});
 
 	}
 
@@ -110,7 +109,16 @@ exports.DataSource = class {
         return([X, y, ids])
     }
 
-    async next(){
+
+    async next() {
+		let batch = await this.getNextBatch();
+		if( batch == null ) batch = await this.getNextBatch();
+
+		if( batch == null ) console.error( 'Next batch if empty');
+		return batch;
+    }
+
+    async getNextBatch(){
         /* Get next minibatch and epoch
         * returns: a tupe (X, y, ids) or null if end of epoch
         *   (next call will return (X, y, ids)).
@@ -129,7 +137,7 @@ exports.DataSource = class {
         let remainingInBatch = this.batchSize;
         let targetsTodo = this.target2Ids.size;
 
-        // now loop over eack key take a certain number (what remains / todo)
+        // now loop over each key take a certain number (what remains / todo)
         let epochEnd = false;
         let query = '(';
         for(let target of this.target2Ids.keys()){
@@ -156,7 +164,8 @@ exports.DataSource = class {
             }
         }
 
-        if(epochEnd){return(null);}
+        if(epochEnd) return null;
+
 
         query = query.slice(0, -1);
         query += ')';
@@ -164,7 +173,7 @@ exports.DataSource = class {
 
         let retArrays = await this.dbp
             .select('SELECT * FROM dataset WHERE ex_id IN ' + query)
-            .then((x) => {[X, y, ids] = this.getArrays(x)});
+            .then((x) => {[X, y, ids] = this.getArrays(x)}).catch( (error) => { console.log( error );});
 
         await retArrays;
 

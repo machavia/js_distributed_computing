@@ -1,7 +1,5 @@
 DataSource = require(__dirname + '/../models/DataSource')
 
-DataSource = require('./../models/DataSource')
-
 ds = new DataSource.DataSource()
 
 async function twoEpochs(){

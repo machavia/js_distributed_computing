@@ -26,6 +26,7 @@ exports.Worker = class {
 	}
 
 	sendTask( task ) {
+
 		if(task['worker_id'] === undefined ) {
 			console.error( 'Can not send a task without worker id');
 			return false
@@ -43,8 +44,14 @@ exports.Worker = class {
 			return false;
 		}
 
-		console.log( 'rowid send ' + task['rowid'] + ' to worker id ' + task['worker_id'] );
-		let ob = { id: task['rowid'], worker_id: task['worker_id'], job_id: task['job_id'], batch: task['batch'] };
+		console.log( 'rowid send ' + task['taskId'] + ' to worker id ' + task['worker_id'] );
+		let ob = {
+			id: task['taskId'],
+			worker_id: task['worker_id'],
+			job_id: task['job_id'],
+			batch: task['batch'],
+			state: task['state']
+		};
 		this.socket.emit('new_task', ob);
 	}
 
