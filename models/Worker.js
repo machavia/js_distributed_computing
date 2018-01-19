@@ -29,10 +29,9 @@ exports.Worker = class {
 		console.log( 'rowid send ' + task['taskId'] + ' to worker id ' + task['worker_id'] );
 		let ob = {
 			id: task['taskId'],
-			worker_id: task['worker_id'],
-			job_id: task['job_id'],
+			state: task['state'],
+			params: task['params'],
 			batch: task['batch'],
-			state: task['state']
 		};
 		this.socket.emit('new_task', ob);
 	}

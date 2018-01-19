@@ -1,9 +1,10 @@
 {
   "name": "colony",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www"
+    "start": "node ./bin/multicore.js",
+    "stop": "killall node"
   },
   "dependencies": {
     "body-parser": "~1.18.2",

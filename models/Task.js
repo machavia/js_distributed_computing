@@ -48,9 +48,8 @@ exports.Task = class {
 
 		let task = {
 			taskId: this.taskId,
-			worker_id: 0,
-			status: "ready",
 			state: this.state,
+			params : this.job.params,
 			batch: JSON.stringify( nextBatch )
 		};
 

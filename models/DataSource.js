@@ -110,7 +110,12 @@ exports.DataSource = class {
     }
 
 
-    async next() {
+	/**
+	 * End an epoch is done getNextBatch() will return null
+	 * We need to call if a second time to get the first element of the next epoch
+	 * @returns {Promise}
+	 */
+	async next() {
 		let batch = await this.getNextBatch();
 		if( batch == null ) batch = await this.getNextBatch();
 
