@@ -11,24 +11,11 @@ exports.Database = class {
         )   
 	}
 
-    open(obj=this) {
-        return new Promise(
-            function(resolve) {
-                obj.db = new sqlite3.Database(
-                    db_file, 
-                    function(err) {
-                        if(err) reject("Open error: "+ err.message)
-                        else    resolve(path + " opened")
-                    }
-                )   
-            }
-        )
-    }
+	select(query ) {
 
-	select(query, obj=this) {
 		return new Promise(
             function(resolve, reject){
-                obj.db.all(
+                this.db.all(
                     query,
                     [],
                     (err, rows ) => {
@@ -36,8 +23,28 @@ exports.Database = class {
                         else {resolve(rows)}
                     }
                 )
-            }
+            }.bind( this )
         );
+	}
+
+	update( table, data, where, limit = false ) {
+
+		return new Promise( function(resolve, reject) {
+
+			let fields = Object.keys(data)
+				fields = fields.map((field) => field + ' = (?)').join(',');
+
+				if( limit != false) {
+					where = 'rowid IN ( SELECT rowid FROM ' + table + ' WHERE '+ where + ' LIMIT ' + limit + ')'
+				}
+				let query = 'UPDATE ' + table + ' SET ' + fields + ' WHERE ' + where;
+
+				let values = Object.values(data)
+				this.db.run(query, values, (err) => {
+					if (err) console.error(err.message)
+					else( resolve() )
+				});
+			}.bind( this ));
 	}
 
 	/**

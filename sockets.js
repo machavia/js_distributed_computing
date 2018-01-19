@@ -1,12 +1,26 @@
+const { Job } = require('./models/Job');
+const { TaskManager } = require('./models/TaskManager');
 const { Worker } = require('./models/Worker');
-const { Task } = require('./models/Task');
 var sockets = {};
 
+/**
+ * Handle connection from workers
+ * @param server
+ */
 sockets.init = function (server) {
 
-	var io = require('socket.io').listen(server);
-	var taskManager = new Task();
+	var colonyId = Math.floor(Math.random() * Math.floor(99999)); //all the colonies must be listed in a global db server. Id must be given by this global host
+	var taskManager = false;
+	Job.getAvailableJobs( colonyId, 2 ).then( (result) => {
+		taskManager = new TaskManager( result );
+	});
 
+
+	var io = require('socket.io').listen(server);
+
+
+	//check if the worker as a valid authentication.
+	//for now this is not been used
 	io.use((socket, next) => {
 		let token = socket.handshake.query.token;
 		if (isValid(token)) {
@@ -15,19 +29,17 @@ sockets.init = function (server) {
 		return next(new Error('authentication error'));
 	});
 
+	//when a new connection is established by a worker
 	io.on('connection', (socket) => {
+
+		//auth token
 		let token = socket.handshake.query.token;
-		let worker = new Worker( socket, taskManager );
-		worker.connect( token );
 
-		socket.on('get_task', async function(msg){
-			let myTask = {};
-			await taskManager.getATask( msg['worker_id'] )
-				.then( (result) => myTask = result);
+		//creating new worker instance to keep conected worker in memory
+		let worker = new Worker( socket );
+		worker.connect( token ); //this is useless for now
 
-			worker.sendTask( myTask );
-		});
-
+		//when a worker send a result back
 		socket.on('save_result', function(msg){
 			console.log( 'Receiveing result ' + JSON.stringify(msg) );
 			if( msg.task_id === undefined || msg.result === undefined ) {
@@ -37,10 +49,17 @@ sockets.init = function (server) {
 			taskManager.saveResult( msg.task_id, msg.result );
 		});
 
+		//when a worker disconnect
 		socket.on('disconnect', function(){
 			worker.disconnect();
 			console.log('user disconnected');
 		});
+
+		//pushing the first task to the worker
+		taskManager.getATask( worker.woker_id ).then( (myTask) => {
+			if( myTask !== null ) worker.sendTask( myTask )
+		});
+
 	});
 
 
@@ -48,6 +67,11 @@ sockets.init = function (server) {
 
 module.exports = sockets;
 
+/**
+ * Validate the worker authentication
+ * @param {string} token
+ * @returns {boolean} is connection is valid
+ */
 function isValid( token ) {
 	return true;
 }

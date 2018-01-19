@@ -1,9 +1,8 @@
 
 exports.Worker = class {
 
-	constructor( socket, taskManager ) {
+	constructor( socket ) {
 		this.socket = socket;
-		this.task = taskManager;
 	}
 
 	connect( id ) {
@@ -26,23 +25,6 @@ exports.Worker = class {
 	}
 
 	sendTask( task ) {
-
-		if(task['worker_id'] === undefined ) {
-			console.error( 'Can not send a task without worker id');
-			return false
-		}
-
-		if( task.status == 'end') {
-			console.log( 'Sending end command to worker ' + task['worker_id'] );
-			this.socket.emit('end', {worker_id: task['worker_id']});
-			return false;
-		}
-
-		if( task.status == 'wait') {
-			console.log( 'Sending wait command to worker ' + task['worker_id'] );
-			this.socket.emit('wait', {worker_id: task['worker_id'], time: 5000 });
-			return false;
-		}
 
 		console.log( 'rowid send ' + task['taskId'] + ' to worker id ' + task['worker_id'] );
 		let ob = {

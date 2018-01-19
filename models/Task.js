@@ -1,32 +1,54 @@
 const { DataSource } = require('./DataSource');
+const { Job } = require('./Job');
 
+/**
+ * Task
+ * A Task is an entity sent to a worker to be computed.
+ * The content in the worker is served by the DataSource class
+ */
 exports.Task = class {
 
-	constructor() {
-		console.log( 'init Task' );
+	constructor( jobId ) {
+		if( !Number.isInteger(jobId) ) throw new Error( 'Job id must be an integer');
+		this.job = new Job( jobId )
 		this.dataSource = new DataSource( 'example.db' );
-		this.taskId = false;
-		this.taskSend = 0;
-		this.state = null;
-
+		this.taskId = false; //unique task id
+		this.taskSend = 0; //count of how many worker has received this task
+		this.state = null; //the state of the task (!= status). This var contains the stats of the model to be sent with the next set of data
+		this.currentBatch = false;
+		this.status = 'waiting';
+		this.job.start();
 	}
 
-	async getATask( workerId ) {
+	/**
+	 * Get the next task for the job to be processed
+	 * @param workerId
+	 * @returns {Promise} task
+	 */
+	async getATask() {
 
-		if( this.dataSource.epoch == 10 ) return { worker_id: workerId, status: 'end'};
+		console.log( 'Sending job ' + this.job.id + ' epoch ' + this.dataSource.epoch );
+
+		if( this.dataSource.epoch == 10 ) return null;
 
 		let nextBatch = [];
-		await this.dataSource.next().then( (result) => nextBatch = result );
 
-		if( this.taskSend >= 1 ) {
-			return {worker_id: workerId, status: 'wait'};
+		//if we have received a result for the current task (or init) we want to get a new task
+		if( this.status == 'waiting' ) {
+			this.status = 'running';
+			this.taskId = this.generateId()
+			await this.dataSource.next().then( (result) => nextBatch = result );
+			this.currentBatch = nextBatch;
+		}
+		else {
+			nextBatch = this.currentBatch;
 		}
 
 		this.taskSend++;
-		this.taskId = this.generateId()
+
 		let task = {
 			taskId: this.taskId,
-			worker_id: workerId,
+			worker_id: 0,
 			status: "ready",
 			state: this.state,
 			batch: JSON.stringify( nextBatch )
@@ -36,17 +58,35 @@ exports.Task = class {
 
 	}
 
+	/**
+	 * Save the state of the model sent by the worker
+	 * #TODO: Make sure the state is correct by double (triple) checking it with another result sent by another worker
+	 * @param taskid
+	 * @param result
+	 * @returns {boolean}
+	 */
 	saveResult( taskid, result ) {
 		if( taskid != this.taskId ) {
 			console.log( 'Current task id not matching send task id with result' );
 			return false;
 		}
 
+		this.status = 'waiting';
 		this.taskSend = 0;
 		this.state = result;
+
+		//when a job is complete we need to pass the final result
+		if( this.dataSource.epoch == 10 ) {
+			this.status = 'done';
+			this.job.end( result );
+		}
 	}
 
 
+	/**
+	 * Generate a unique task id based on the current time stamp + random string
+	 * @returns {string} unique id
+	 */
 	generateId() {
 		let text = "";
 		let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
