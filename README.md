@@ -12,6 +12,6 @@ or
 or
 `node bin/www`
 
-2. (Optionnal) test: connect to the server by opening the url: `http://localost:3000`
+2. (Optionnal) test: connect to the server by opening the url: `http://localhost:3000`
 
 3. In the worker project, open the test.html file using a browser
