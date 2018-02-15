@@ -8,9 +8,9 @@ const { Job } = require('./Job');
  */
 exports.Task = class {
 
-	constructor( jobId ) {
+	constructor( jobId, params ) {
 		if( !Number.isInteger(jobId) ) throw new Error( 'Job id must be an integer');
-		this.job = new Job( jobId )
+		this.job = new Job( jobId, params )
 		this.dataSource = new DataSource( 'example.db' );
 		this.taskId = false; //unique task id
 		this.taskSend = 0; //count of how many worker has received this task
@@ -18,6 +18,8 @@ exports.Task = class {
 		this.currentBatch = false;
 		this.status = 'waiting';
 		this.job.start();
+
+		this.iteration = 0;
 	}
 
 	/**
@@ -38,6 +40,7 @@ exports.Task = class {
 			this.status = 'running';
 			this.taskId = this.generateId()
 			await this.dataSource.next().then( (result) => nextBatch = result );
+			nextBatch = {'x' : nextBatch[0], 'xShape' : nextBatch[1],'y' : nextBatch[2] };
 			this.currentBatch = nextBatch;
 		}
 		else {
@@ -65,10 +68,27 @@ exports.Task = class {
 	 * @returns {boolean}
 	 */
 	saveResult( taskid, result ) {
+
 		if( taskid != this.taskId ) {
 			console.log( 'Current task id not matching send task id with result' );
 			return false;
 		}
+		this.iteration++;
+
+		/**
+		 * DEBUG
+		 */
+		const { Database } = require('./Database');
+		let db = new Database( 'main.db');
+		db.insert( 'bench', {
+			iteration: this.iteration,
+			epoch : this.dataSource.epoch,
+			cost_val : result[2]
+		});
+
+
+		console.log( 'Receiveing result. Cost val ' + result[2] );
+		result = { iw: result[0], op: result[1]};
 
 		this.status = 'waiting';
 		this.taskSend = 0;

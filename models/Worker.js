@@ -7,7 +7,7 @@ exports.Worker = class {
 
 	connect( id ) {
 		this.woker_id = id
-		console.log( 'Worker connected: ' + id );
+		//console.log( 'Worker connected: ' + id );
 		/*
 		db.insert(
 			'worker',
@@ -26,7 +26,6 @@ exports.Worker = class {
 
 	sendTask( task ) {
 
-		console.log( 'rowid send ' + task['taskId'] + ' to worker id ' + task['worker_id'] );
 		let ob = {
 			id: task['taskId'],
 			state: task['state'],

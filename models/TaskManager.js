@@ -16,7 +16,7 @@ exports.TaskManager = class {
 		this.taskObs = [];
 
 		jobs.forEach( (job) => {
-			this.taskObs.push( new Task( job['id'] ) );
+			this.taskObs.push( new Task( job['id'], job['parameter'] ) );
 		});
 	}
 

@@ -8,7 +8,7 @@ exports.DataSource = class {
      * Disclaimer: Assumes that all ids contained in db do fit in memory
      */
 
-	constructor(fileName, batchSize=64) {
+	constructor(fileName, batchSize=8) {
         this.buff = undefined;
 
         this.targetsAvailable = {};
@@ -182,6 +182,38 @@ exports.DataSource = class {
 
         await retArrays;
 
-        return([X, y, ids]);
+        let Xout = [];
+        let maxLength = 0;
+        let maxSteps = 0;
+	    for(let seq of X){
+
+	    	let seqOut = [];
+        	for(let step of seq){
+
+		        if( step.length * seq.length > maxLength ){
+		        	maxLength = step.length * seq.length
+			        maxSteps = seq.length;
+		        }
+        		for(let feature of step) {
+			        seqOut.push(feature);
+		        }
+	        }
+	        Xout.push(seqOut);
+	    }
+
+	    let XShape = [maxSteps, X[0][0].length];
+
+	    let XoutPadded = [];
+	    for( let seq of Xout ) {
+		    let a = Array.apply( null, Array(maxLength-seq.length) ).map(Number.prototype.valueOf,0);
+		    a = a.concat(seq);
+		    XoutPadded.push( a );
+	    }
+
+	    y = y.map( (e) => [e] );
+
+        return([XoutPadded, XShape, y]);
     }
+
+
 }

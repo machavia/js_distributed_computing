@@ -2,7 +2,7 @@ const sqlite3 = require('sqlite3').verbose();
 
 exports.Database = class {
 
-	constructor(db_file='sq_lite.db') {
+	constructor(db_file='main.db') {
 		this.db_path = __dirname + '/../db/' + db_file
 
         this.db = new sqlite3.Database(

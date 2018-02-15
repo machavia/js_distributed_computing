@@ -10,6 +10,7 @@ var sockets = {};
 sockets.init = function (server) {
 
 	var colonyId = Math.floor(Math.random() * Math.floor(99999)); //all the colonies must be listed in a global db server. Id must be given by this global host
+	colonyId = 1;
 	var taskManager = false;
 	Job.getAvailableJobs( colonyId, 2 ).then( (result) => {
 		taskManager = new TaskManager( result );
@@ -41,7 +42,6 @@ sockets.init = function (server) {
 
 		//when a worker send a result back
 		socket.on('save_result', function(msg){
-			console.log( 'Receiveing result ' + JSON.stringify(msg) );
 			if( msg.task_id === undefined || msg.result === undefined ) {
 				console.error( 'Missing task_id or result');
 				return false;
@@ -52,7 +52,7 @@ sockets.init = function (server) {
 		//when a worker disconnect
 		socket.on('disconnect', function(){
 			worker.disconnect();
-			console.log('user disconnected');
+			//console.log('user disconnected');
 		});
 
 		//pushing the first task to the worker
