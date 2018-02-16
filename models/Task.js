@@ -51,7 +51,7 @@ exports.Task = class {
             'Sending job ' + this.job.id + ' epoch ' + this.dataSource.epoch +
             ' iteration ' + this.iteration);
 
-		if( this.dataSource.epoch == 10 ) return null;
+		if( this.dataSource.epoch == 500 ) return null;
 
 		let nextBatch = [];
 
