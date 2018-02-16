@@ -1,8 +1,22 @@
 #!/usr/bin/env node
 
-
+var fs = require('fs')
 var cluster = require('cluster');
 var numCPUs = require('os').cpus().length;
+
+try {
+    // just a small setup to use as many cpus as we decide
+    let setupContent = fs.readFileSync('cluster_setup.json');
+    let setup = JSON.parse(setupContent);
+    if(typeof(setup.cpu_count) === 'number' && setup.cpu_count !== -1){
+        numCPUs = setup.cpu_count;
+        console.log('setting numCPUs at', numCPUs);
+    }
+}
+catch(e){
+    console.log('could not read the cluster_setup file setting max cpu count');
+    console.log('original error', e);
+}
 
 if (cluster.isMaster) {
 

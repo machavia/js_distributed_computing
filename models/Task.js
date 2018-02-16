@@ -1,5 +1,6 @@
 const { DataSource } = require('./DataSource');
 const { Job } = require('./Job');
+const fs = require('fs');
 
 /**
  * Task
@@ -9,17 +10,34 @@ const { Job } = require('./Job');
 exports.Task = class {
 
 	constructor( jobId, params ) {
-		if( !Number.isInteger(jobId) ) throw new Error( 'Job id must be an integer');
+		if( !Number.isInteger(jobId) ) throw new Error('Job id must be an integer');
 		this.job = new Job( jobId, params )
-		this.dataSource = new DataSource( 'example.db' );
+		this.dataSource = new DataSource( 'example.db', params.batch_size);
 		this.taskId = false; //unique task id
-		this.taskSend = 0; //count of how many worker has received this task
+		this.sendCount = 0; //count of how many worker has received this task
 		this.state = null; //the state of the task (!= status). This var contains the stats of the model to be sent with the next set of data
 		this.currentBatch = false;
 		this.status = 'waiting';
 		this.job.start();
 
 		this.iteration = 0;
+
+        this.save_every = 10; //TODO use
+        try {
+            let setupContent = fs.readFileSync('task_setup.json');
+            let setup = JSON.parse(setupContent);
+            if(typeof(setup.cpu_count) === 'number' && setup.cpu_count !== -1){
+                this.save_every = setup.save_every;
+                console.log('setting save every at', setup.save_every);
+            }
+        }
+        catch(e){
+            console.log(
+                'could not read the task setup file, setting default values...'
+            );
+            console.log('original error', e);
+        }
+
 	}
 
 	/**
@@ -29,7 +47,9 @@ exports.Task = class {
 	 */
 	async getATask() {
 
-		console.log( 'Sending job ' + this.job.id + ' epoch ' + this.dataSource.epoch );
+		console.log(
+            'Sending job ' + this.job.id + ' epoch ' + this.dataSource.epoch +
+            ' iteration ' + this.iteration);
 
 		if( this.dataSource.epoch == 10 ) return null;
 
@@ -40,14 +60,16 @@ exports.Task = class {
 			this.status = 'running';
 			this.taskId = this.generateId()
 			await this.dataSource.next().then( (result) => nextBatch = result );
-			nextBatch = {'x' : nextBatch[0], 'xShape' : nextBatch[1],'y' : nextBatch[2] };
+			nextBatch = {
+                'x' : nextBatch[0], 'xShape' : nextBatch[1],'y' : nextBatch[2]
+            };
 			this.currentBatch = nextBatch;
 		}
 		else {
 			nextBatch = this.currentBatch;
 		}
 
-		this.taskSend++;
+		this.sendCount++;
 
 		let task = {
 			taskId: this.taskId,
@@ -83,19 +105,26 @@ exports.Task = class {
 		db.insert( 'bench', {
 			iteration: this.iteration,
 			epoch : this.dataSource.epoch,
-			cost_val : result[2]
+			cost_val : result[2],
+            job_id: this.job.id,
+            date: Date.now()
 		});
-
-
-		console.log( 'Receiveing result. Cost val ' + result[2] );
+        /*
+            At some point you'd also want to save the weights of your model
+            model_weights: result[0],
+            optimizer_params: result[1]
+        */
+        
+		console.log( 'Receiving result. Cost val ' + result[2] );
 		result = { iw: result[0], op: result[1]};
 
 		this.status = 'waiting';
-		this.taskSend = 0;
+		// this.sendCount = 0; TODO (MARC) uncomment ?
+        // for now, this insures that progress is done equally on each job
 		this.state = result;
 
 		//when a job is complete we need to pass the final result
-		if( this.dataSource.epoch == 10 ) {
+		if( this.dataSource.epoch == 500 ) {
 			this.status = 'done';
 			this.job.end( result );
 		}

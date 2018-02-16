@@ -21,21 +21,25 @@ exports.TaskManager = class {
 	}
 
 	/**
-	 * Check the least sent task and sent it back
+	 * Check the least sent task and send it back
 	 * @returns {Promise} from Task.getATask()
 	 */
 	async getATask() {
 
 		let sentByTask = [];
-		Object.keys(this.taskObs).forEach(function (key) {
-			let obj = this.taskObs[key];
+        // use an array as a dict (using an enumeration would work too)
+		Object.keys(this.taskObs).forEach(function (jobIndex) {
+			let obj = this.taskObs[jobIndex];
 
 			if( obj['status'] === 'done' ) {
-				this.taskObs.splice(key, 1);
+				this.taskObs.splice(jobIndex, 1);
 				return;
 			}
 
-			sentByTask[obj.taskSend] = key;
+			sentByTask[obj.sendCount] = jobIndex;
+
+            console.log('sendCount', obj.sendCount, ' jobIndex ', jobIndex);
+
 		}.bind(this));
 
 		if( this.taskObs.length == 0 ) {
@@ -52,7 +56,7 @@ exports.TaskManager = class {
 	/**
 	 * Look for the right Task class that handling the given task it
 	 * @param {string} taskid
-	 * @param {json|object} result
+	 * @param {json|observerject} result
 	 */
 	saveResult( taskid, result ) {
 		this.taskObs.forEach( (ob) => {

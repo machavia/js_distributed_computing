@@ -19,7 +19,6 @@ sockets.init = function (server) {
 
 	var io = require('socket.io').listen(server);
 
-
 	//check if the worker as a valid authentication.
 	//for now this is not been used
 	io.use((socket, next) => {
@@ -52,7 +51,7 @@ sockets.init = function (server) {
 		//when a worker disconnect
 		socket.on('disconnect', function(){
 			worker.disconnect();
-			//console.log('user disconnected');
+			console.log('user disconnected');
 		});
 
 		//pushing the first task to the worker
