@@ -53,7 +53,7 @@ sockets.init = function (server) {
 		//when a worker disconnect
 		socket.on('disconnect', function(){
 			worker.disconnect();
-			console.log('user disconnected');
+			//console.log('user disconnected');
 		});
 
 		//pushing the first task to the worker

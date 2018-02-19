@@ -165,7 +165,10 @@ exports.Task = class {
 		if( this.dataSource.epoch == 30 ){
 			this.status = 'done';
 			this.job.end( result );
+			return;
 		}
+
+		this.status = 'waiting'; //this makes datasource send the next minibatch when this method is called again
 	}
 
 

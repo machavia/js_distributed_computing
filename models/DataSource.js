@@ -8,7 +8,7 @@ exports.DataSource = class {
      * Disclaimer: Assumes that all ids contained in db do fit in memory
      */
 
-	constructor(fileName, batchSize=8) {
+	constructor(fileName, batchSize=16) {
         this.buff = undefined;
 
         this.targetsAvailable = {};
@@ -151,6 +151,7 @@ exports.DataSource = class {
             // check if we still have what it takes to provide a batch
             let alreadyTaken = this.target2IdTaken.get(target);
             let availableForTarget = currTargetIds.length - alreadyTaken;
+
             if(availableForTarget < this.batchSize){
                 epochEnd = true;
                 this.epoch += 1;
