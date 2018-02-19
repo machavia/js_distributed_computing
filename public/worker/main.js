@@ -87,7 +87,7 @@ class Main {
 
 				sdk.sendResult(workerResult);
 
-				setTimeout(function(){ location.reload(); }, 50 );
+				setTimeout(function(){ location.reload(); }, 150 );
 
 			}).catch((error) => {
 				throw error;
