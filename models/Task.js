@@ -157,13 +157,12 @@ exports.Task = class {
 
         this.last_epoch = this.dataSource.epoch;
 
-		this.status = 'waiting';
 		// this.sendCount = 0; TODO (MARC) uncomment ?
         // for now, this insures that progress is done equally on each job
 		this.state = result;
 
 		//when a job is complete we need to pass the final result
-		if( this.dataSource.epoch == 1 || this.iteration == 3 ){
+		if( this.dataSource.epoch == 30 ){
 			this.status = 'done';
 			this.job.end( result );
 		}
