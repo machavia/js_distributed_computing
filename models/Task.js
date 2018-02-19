@@ -15,14 +15,18 @@ exports.Task = class {
 		this.dataSource = new DataSource( 'example.db', params.batch_size);
 		this.taskId = false; //unique task id
 		this.sendCount = 0; //count of how many worker has received this task
-		this.state = null; //the state of the task (!= status). This var contains the stats of the model to be sent with the next set of data
+		this.state = null; //the state of the task (!= status). This var 
+        // contains the stats of the model to be sent with the next set of data
 		this.currentBatch = false;
 		this.status = 'waiting';
 		this.job.start();
 
 		this.iteration = 0;
+		this.last_epoch = 0;
 
         this.save_every = 10; //TODO use
+        this.save_location = "./data/weights"; //TODO use
+
         try {
             let setupContent = fs.readFileSync('task_setup.json');
             let setup = JSON.parse(setupContent);
@@ -30,6 +34,7 @@ exports.Task = class {
                 this.save_every = setup.save_every;
                 console.log('setting save every at', setup.save_every);
             }
+            this.save_location = setup.save_location;
         }
         catch(e){
             console.log(
@@ -38,6 +43,16 @@ exports.Task = class {
             console.log('original error', e);
         }
 
+        if(! fs.existsSync(this.save_location)){
+            try {
+                fs.mkdirSync(this.save_location);
+            }
+            catch(e){
+                console.log(e);
+                throw new Error(
+                    'could not create a save dir at the given location');
+            }
+        }
 	}
 
 	/**
@@ -55,11 +70,12 @@ exports.Task = class {
 
 		let nextBatch = [];
 
-		//if we have received a result for the current task (or init) we want to get a new task
-		if( this.status == 'waiting' ) {
+		// if we have received a result for the current task (or init) we want
+        // to get a new task
+		if(this.status == 'waiting') {
 			this.status = 'running';
-			this.taskId = this.generateId()
-			await this.dataSource.next().then( (result) => nextBatch = result );
+			this.taskId = this.generateId();
+			await this.dataSource.next().then((result) => nextBatch = result);
 			nextBatch = {
                 'x' : nextBatch[0], 'xShape' : nextBatch[1],'y' : nextBatch[2]
             };
@@ -84,7 +100,8 @@ exports.Task = class {
 
 	/**
 	 * Save the state of the model sent by the worker
-	 * #TODO: Make sure the state is correct by double (triple) checking it with another result sent by another worker
+	 * #TODO: Make sure the state is correct by double (triple) checking it
+     * with another result sent by another worker
 	 * @param taskid
 	 * @param result
 	 * @returns {boolean}
@@ -92,7 +109,8 @@ exports.Task = class {
 	saveResult( taskid, result ) {
 
 		if( taskid != this.taskId ) {
-			console.log( 'Current task id not matching send task id with result' );
+			console.log(
+                'Current task id not matching send task id with result');
 			return false;
 		}
 		this.iteration++;
@@ -115,8 +133,30 @@ exports.Task = class {
             optimizer_params: result[1]
         */
         
-		console.log( 'Receiving result. Cost val ' + result[2] );
-		result = { iw: result[0], op: result[1]};
+		console.log('Receiving result. Cost val ' + result[2] + ' at ' +
+            'iteration ' + this.iteration);
+		result = {iw: result[0], op: result[1]};
+
+        // Here we will save the weights that were found
+        // every x batches AND at the end of every epoch !!!
+        if(
+            (this.iteration === 1) ||
+            (this.iteration % this.save_every === 0) ||
+            (this.last_epoch - this.dataSource.epoch > 0)
+        ){
+            let json = JSON.stringify(result);
+            // zip (TODO put that in the browser part)
+
+            fs.writeFileSync(
+                this.save_location +
+                '/return' +
+                '_job_' + this.job.id +
+                '_epoch_' + this.dataSource.epoch +
+                '_iteration_' + this.iteration +
+                '.json', json, 'utf8');
+        }
+
+        this.last_epoch = this.dataSource.epoch;
 
 		this.status = 'waiting';
 		// this.sendCount = 0; TODO (MARC) uncomment ?
@@ -124,7 +164,7 @@ exports.Task = class {
 		this.state = result;
 
 		//when a job is complete we need to pass the final result
-		if( this.dataSource.epoch == 500 ) {
+		if( this.dataSource.epoch == 500){
 			this.status = 'done';
 			this.job.end( result );
 		}
@@ -139,7 +179,8 @@ exports.Task = class {
 		let text = "";
 		let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-		for( let i = 0; i < 5; i++) text += possible.charAt(Math.floor(Math.random() * possible.length));
+		for( let i = 0; i < 5; i++)
+            text += possible.charAt(Math.floor(Math.random() * possible.length));
 		text = Date.now() + text;
 
 		return text;
