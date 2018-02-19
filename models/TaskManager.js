@@ -12,11 +12,11 @@ exports.TaskManager = class {
 	 * For each job we init a Task class and we store it in this.taskObs
 	 * @param jobs
 	 */
-	constructor( jobs ) {
+	constructor( jobs, dbOb ) {
 		this.taskObs = [];
 
 		jobs.forEach( (job) => {
-			this.taskObs.push( new Task( job['id'], job['parameter'] ) );
+			this.taskObs.push( new Task( job['id'], job['parameter'], dbOb ) );
 		});
 	}
 
@@ -27,22 +27,15 @@ exports.TaskManager = class {
 	async getATask() {
 
 		let sentByTask = [];
-        // use an array as a dict (using an enumeration would work too)
-		Object.keys(this.taskObs).forEach(function (jobIndex) {
-			let obj = this.taskObs[jobIndex];
 
-			if( obj['status'] === 'done' ) {
-				this.taskObs.splice(jobIndex, 1);
-				return;
+		for (let [jobIndex, obj] of Object.entries(this.taskObs)) {
+			if( obj['status'] !== 'done' ) {
+				sentByTask[obj.sendCount] = jobIndex;
+				//console.log('sendCount', obj.iteration, ' jobIndex ', jobIndex);
 			}
+		}
 
-			sentByTask[obj.sendCount] = jobIndex;
-
-            console.log('sendCount', obj.sendCount, ' jobIndex ', jobIndex);
-
-		}.bind(this));
-
-		if( this.taskObs.length == 0 ) {
+		if( sentByTask.length == 0 ) {
 			console.log( 'No task to send' );
 			return null;
 		}

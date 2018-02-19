@@ -9,9 +9,10 @@ const fs = require('fs');
  */
 exports.Task = class {
 
-	constructor( jobId, params ) {
+	constructor( jobId, params, dbOb ) {
 		if( !Number.isInteger(jobId) ) throw new Error('Job id must be an integer');
-		this.job = new Job( jobId, params )
+		this.db = dbOb;
+		this.job = new Job( jobId, params, dbOb );
 		this.dataSource = new DataSource( 'example.db', params.batch_size);
 		this.taskId = false; //unique task id
 		this.sendCount = 0; //count of how many worker has received this task
@@ -63,10 +64,10 @@ exports.Task = class {
 	async getATask() {
 
 		console.log(
-            'Sending job ' + this.job.id + ' epoch ' + this.dataSource.epoch +
+            'Sending job ' + this.job.id
+			+ ' epoch ' + this.dataSource.epoch +
             ' iteration ' + this.iteration);
 
-		if( this.dataSource.epoch == 500 ) return null;
 
 		let nextBatch = [];
 
@@ -118,9 +119,7 @@ exports.Task = class {
 		/**
 		 * DEBUG
 		 */
-		const { Database } = require('./Database');
-		let db = new Database( 'main.db');
-		db.insert( 'bench', {
+		this.db.insert( 'bench', {
 			iteration: this.iteration,
 			epoch : this.dataSource.epoch,
 			cost_val : result[2],
@@ -133,7 +132,7 @@ exports.Task = class {
             optimizer_params: result[1]
         */
         
-		console.log('Receiving result. Cost val ' + result[2] + ' at ' +
+		console.log('Receiving result. Job id ' +  this.job.id + ' Cost val ' + result[2] + ' at ' +
             'iteration ' + this.iteration);
 		result = {iw: result[0], op: result[1]};
 
@@ -164,7 +163,7 @@ exports.Task = class {
 		this.state = result;
 
 		//when a job is complete we need to pass the final result
-		if( this.dataSource.epoch == 500){
+		if( this.dataSource.epoch == 1 || this.iteration == 3 ){
 			this.status = 'done';
 			this.job.end( result );
 		}

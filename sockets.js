@@ -1,6 +1,8 @@
 const { Job } = require('./models/Job');
 const { TaskManager } = require('./models/TaskManager');
 const { Worker } = require('./models/Worker');
+const { Database } = require('./models/Database');
+const dbOb = new Database( 'main.db');
 var sockets = {};
 
 /**
@@ -12,8 +14,8 @@ sockets.init = function (server) {
 	var colonyId = Math.floor(Math.random() * Math.floor(99999)); //all the colonies must be listed in a global db server. Id must be given by this global host
 	colonyId = 1;
 	var taskManager = false;
-	Job.getAvailableJobs( colonyId, 2 ).then( (result) => {
-		taskManager = new TaskManager( result );
+	Job.getAvailableJobs( colonyId, 2, dbOb ).then( (result) => {
+		taskManager = new TaskManager( result, dbOb );
 	});
 
 
@@ -45,7 +47,7 @@ sockets.init = function (server) {
 				console.error( 'Missing task_id or result');
 				return false;
 			}
-			taskManager.saveResult( msg.task_id, msg.result );
+			taskManager.saveResult( msg.task_id, msg.result, dbOb );
 		});
 
 		//when a worker disconnect
