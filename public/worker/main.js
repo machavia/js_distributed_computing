@@ -17,7 +17,7 @@ class Main {
 	test() {
 
 		var workerId = Sdk.generateWorkerId(); //every worker as it own random id, it must be unique (out about multiple visitors x workers? maybe vId + workerId)
-		var sdk = new Sdk( 'http://localhost:3000/', workerId ); //establishing a new web socket connection with Colony
+		var sdk = new Sdk( 'http://' + window.location.hostname + ':3000/', workerId ); //establishing a new web socket connection with Colony
 
 		console.log( 'New Worker. wId:' + workerId );
 
