@@ -42,12 +42,14 @@ sockets.init = function (server) {
 		worker.connect( token ); //this is useless for now
 
 		//when a worker send a result back
-		socket.on('save_result', function(msg){
+		socket.on('save_result', function(msg, callback){
 			if( msg.task_id === undefined || msg.result === undefined ) {
 				console.error( 'Missing task_id or result');
 				return false;
 			}
 			taskManager.saveResult( msg.task_id, msg.result, dbOb );
+			callback('received');
+
 		});
 
 		//when a worker disconnect

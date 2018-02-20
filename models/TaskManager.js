@@ -55,6 +55,7 @@ exports.TaskManager = class {
 		this.taskObs.forEach( (ob) => {
 			if( ob.taskId ==  taskid ) ob.saveResult( taskid, result )
 		});
+
 	}
 
 }

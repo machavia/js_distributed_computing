@@ -24,7 +24,8 @@ class Main {
 
 		//when a task is sent by the Colony via WebSocket, the worker will handle it here
 		//This is a event base function
-		sdk.handleNewTask(( task ) => {
+		sdk.handleNewTask( async ( task ) => {
+
 
 			let message = task; //complete message sent by Colony
 			if( message['batch'] == undefined || message['params'] == undefined  ) return false;
@@ -53,7 +54,6 @@ class Main {
 
 			};
 
-			console.log( modelParams );
 
 			var t0 = performance.now();
 			deep_batch_train.doBatchFromScratch({
@@ -87,7 +87,6 @@ class Main {
 
 				sdk.sendResult(workerResult);
 
-				setTimeout(function(){ location.reload(); }, 150 );
 
 			}).catch((error) => {
 				throw error;
@@ -99,6 +98,6 @@ class Main {
 	}
 }
 
-function predict() {
-
+function sleep(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
 }

@@ -59,7 +59,9 @@ class Sdk {
 	 * @param result
 	 */
 	sendResult( result ) {
-		this.socket.emit('save_result', result );
+		this.socket.emit('save_result', result, (data) => {
+			if( data == 'received' ) location.reload();
+		});
 	}
 
 	/**

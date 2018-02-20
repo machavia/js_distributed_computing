@@ -116,6 +116,7 @@ exports.Task = class {
 		}
 		this.iteration++;
 
+
 		/**
 		 * DEBUG
 		 */
@@ -186,7 +187,4 @@ exports.Task = class {
 
 		return text;
 	}
-
-
-
 }
