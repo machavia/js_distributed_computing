@@ -1,4 +1,4 @@
 {
-    "save_every": 100,
+    "save_every": 100000000,
     "save_location": "./data/weights"
 }
