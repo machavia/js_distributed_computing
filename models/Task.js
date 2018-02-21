@@ -25,7 +25,7 @@ exports.Task = class {
 		this.iteration = 0;
 		this.last_epoch = 0;
 
-        this.save_every = 10; //TODO use
+        this.save_every = 100000000000; //TODO use
         this.save_location = "./data/weights"; //TODO use
 
         try {
@@ -64,7 +64,7 @@ exports.Task = class {
 	async getATask() {
 
 		console.log(
-            'Sending job ' + this.job.id
+			new Date().toISOString() + ' -> Sending job ' + this.job.id
 			+ ' epoch ' + this.dataSource.epoch +
             ' iteration ' + this.iteration);
 
@@ -133,8 +133,7 @@ exports.Task = class {
             optimizer_params: result[1]
         */
         
-		console.log('Receiving result. Job id ' +  this.job.id + ' Cost val ' + result[2] + ' at ' +
-            'iteration ' + this.iteration);
+		console.log( new Date().toISOString() + ' -> Receiving result. Job id ' +  this.job.id + ' Cost val ' + result[2] + ' at ' + 'iteration ' + this.iteration);
 		result = {iw: result[0], op: result[1]};
 
         // Here we will save the weights that were found

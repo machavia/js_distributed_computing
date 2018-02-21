@@ -36,7 +36,7 @@ exports.TaskManager = class {
 		}
 
 		if( sentByTask.length == 0 ) {
-			console.log( 'No task to send' );
+			console.log( new Date().toISOString() + ' -> No task to send' );
 			return null;
 		}
 
